@@ -13,3 +13,4 @@ gunicorn
 gdown
 chardet
 python-dotenv
+torchvision
