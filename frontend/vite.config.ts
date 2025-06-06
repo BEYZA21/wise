@@ -9,7 +9,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:8000', // backend portunu gir
+      '/api': 'http://${API_URL}', // backend portunu gir
     }
   }
 });

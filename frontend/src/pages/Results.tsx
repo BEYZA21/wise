@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { format, startOfWeek, addDays } from "date-fns";
 import { tr } from "date-fns/locale";
+import { API_URL } from "../config";
 import {
   AlertCircle,
   CheckCircle,
@@ -37,7 +38,7 @@ const Results = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:8000/api/analysis-results/");
+        const res = await fetch(`http://${API_URL}/api/analysis-results/`);
         const data = await res.json();
         setAnalysisResults(data);
       } catch {

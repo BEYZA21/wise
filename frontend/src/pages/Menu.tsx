@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Calendar as CalendarIcon, AlertCircle } from "lucide-react";
-
+import { API_URL } from "../config";
 // Backend'den gelecek analiz sonuçları için örnek tip
 interface AnalysisResult {
   food_category: string;
@@ -52,7 +52,7 @@ const Menu: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:8000/api/analysis-results/");
+        const res = await fetch(`http://${API_URL}/api/analysis-results/`);
         const data = await res.json();
         setAnalysisResults(data);
       } catch {
