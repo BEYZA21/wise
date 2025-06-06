@@ -43,13 +43,25 @@ bucket = gcs_client.bucket(BUCKET_NAME)
 # Windows için yol uyumu
 if sys.platform == "win32":
     pathlib.PosixPath = pathlib.WindowsPath
+import torch
+
+_plate_model = None
+
+def get_plate_model():
+    global _plate_model
+    if _plate_model is None:
+        # Sadece ilk çağrıldığında yükle
+        _plate_model = torch.hub.load('ultralytics/yolov5', 'custom', path='yolov5/weights/wisePlate.pt')
+    return _plate_model
+
+
 
 # YOLO modelini yükle
-plate_model = torch.hub.load('ultralytics/yolov5', 'custom', path='yolov5/weights/wisePlate.pt')
-plate_model.eval()
+# plate_model = torch.hub.load('ultralytics/yolov5', 'custom', path='yolov5/weights/wisePlate.pt')
+# plate_model.eval()
 
 # Model çıktılarının doğru olup olmadığını kontrol et
-print("🔍 YOLO Model sınıf isimleri:", plate_model.names)
+# print("🔍 YOLO Model sınıf isimleri:", plate_model.names)
 
 # Analiz için transform
 transform = transforms.Compose([
@@ -65,7 +77,10 @@ def analysis_result_exists(image_url):
     return AnalysisResult.objects.filter(image_url=image_url).exists()
 def crop_and_save(image, class_names=None, original_filename="", photo_day=None):
     uploaded_results = []
+    plate_model = get_plate_model()  # <-- buraya ekle
     results = plate_model(image)
+    # ... devamı aynı ...
+
     detections = results.xyxy[0].cpu().numpy()
     class_names = plate_model.names
 

@@ -12,36 +12,44 @@ from datetime import datetime
 from google.cloud import storage
 import torchvision.transforms as transforms
 from yolo_models.image_loader import load_image_from_url
+import base64
+import json
+from google.oauth2 import service_account
 
 # Windows için Path desteği
 if sys.platform == "win32":
     pathlib.PosixPath = pathlib.WindowsPath
-import os
-import base64
-import json
-from google.cloud import storage
-from google.oauth2 import service_account
-
-# Environment variable'dan servis hesabı bilgisini al
-base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_BASE64")
-if base64_creds is None:
-    raise Exception("Service account key not found!")
-
-creds_json = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
-
-# Google Cloud Credentials nesnesi oluştur
-credentials = service_account.Credentials.from_service_account_info(creds_json)
-
-# GCS Client'ı oluştur
-gcs_client = storage.Client(credentials=credentials, project=credentials.project_id)
 
 # Model ve GCS ayarları
-MODEL_BASE_PATH = Path("C:/Users/HP/Desktop/WISE/backend/yolov5/weights")
+MODEL_BASE_PATH = Path("yolov5/weights")
 BUCKET_NAME = "wise-uploads"
 GCS_PREFIX = "processed"
-creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
+# GCS Credentials
+base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_BASE64")
+if base64_creds:
+    creds_json = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
+    credentials = service_account.Credentials.from_service_account_info(creds_json)
+    gcs_client = storage.Client(credentials=credentials, project=credentials.project_id)
+else:
+    creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    gcs_client = storage.Client.from_service_account_json(creds_path)
 
 bucket = gcs_client.bucket(BUCKET_NAME)
+
+
+loaded_models = {}
+
+def load_model(model_filename):
+    """Modeli yükler ve bellekte (cache) tutar."""
+    model_path = MODEL_BASE_PATH / model_filename
+    if model_filename not in loaded_models:
+        model = torch.hub.load('ultralytics/yolov5', 'custom', path=str(model_path), force_reload=False)
+        model.eval()
+        loaded_models[model_filename] = model
+    return loaded_models[model_filename]
+
+# analyze_image_from_url ve analyze_directory fonksiyonların olduğu gibi devam edecek.
 
 # Normalize ve resize transform işlemleri
 transform = transforms.Compose([
@@ -98,16 +106,6 @@ WASTE_MODELS = {
     "yan-yemek": "wiseSideCls-yolo5.pt"
 }
 
-loaded_models = {}
-
-def load_model(model_filename):
-    """Modeli yükler ve bellekte tutar."""
-    model_path = MODEL_BASE_PATH / model_filename
-    if model_filename not in loaded_models:
-        model = torch.hub.load('ultralytics/yolov5', 'custom', path=str(model_path), force_reload=False)
-        model.eval()
-        loaded_models[model_filename] = model
-    return loaded_models[model_filename]
 def analyze_image_from_url(image_url_or_path=None, category=None, tensor=None):
     
     try:
