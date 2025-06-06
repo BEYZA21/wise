@@ -9,3 +9,4 @@ opencv-python
 Pillow
 google-auth
 google-cloud-storage
+gunicorn
