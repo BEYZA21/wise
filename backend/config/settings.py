@@ -16,8 +16,8 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 SECRET_KEY = 'django-insecure-0$^ldpx&a0kfrm8$747n&qfnhbkykybd4!9r72%jp)d!r*2x-6'
-DEBUG = True
-ALLOWED_HOSTS = []
+DEBUG = False
+
 
 GS_BUCKET_NAME = 'wise-uploads'
 ALLOWED_HOSTS = [
