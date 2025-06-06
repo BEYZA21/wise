@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { API_URL } from "../config";
 import {
   BarChart,
   Bar,
@@ -64,7 +63,7 @@ const Statistics = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/analysis-results/`);
+        const res = await fetch("${API_URL}/api/analysis-results/");
         const data = await res.json();
         setAnalysisResults(data);
       } catch {
