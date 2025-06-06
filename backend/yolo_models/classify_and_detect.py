@@ -16,6 +16,24 @@ from yolo_models.image_loader import load_image_from_url
 # Windows için Path desteği
 if sys.platform == "win32":
     pathlib.PosixPath = pathlib.WindowsPath
+import os
+import base64
+import json
+from google.cloud import storage
+from google.oauth2 import service_account
+
+# Environment variable'dan servis hesabı bilgisini al
+base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_BASE64")
+if base64_creds is None:
+    raise Exception("Service account key not found!")
+
+creds_json = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
+
+# Google Cloud Credentials nesnesi oluştur
+credentials = service_account.Credentials.from_service_account_info(creds_json)
+
+# GCS Client'ı oluştur
+gcs_client = storage.Client(credentials=credentials, project=credentials.project_id)
 
 # Model ve GCS ayarları
 MODEL_BASE_PATH = Path("C:/Users/HP/Desktop/WISE/backend/yolov5/weights")
