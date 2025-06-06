@@ -20,6 +20,12 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 GS_BUCKET_NAME = 'wise-uploads'
+ALLOWED_HOSTS = [
+    'wise-pr89.onrender.com',  # Render domainin
+    'localhost',
+    '127.0.0.1',
+    # Gerekirse diğer domainler
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
