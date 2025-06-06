@@ -52,7 +52,7 @@ const Menu: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`http://${API_URL}/api/analysis-results/`);
+        const res = await fetch(`${API_URL}/api/analysis-results/`);
         const data = await res.json();
         setAnalysisResults(data);
       } catch {

@@ -49,12 +49,12 @@ const Dashboard: React.FC = () => {
   const fetchDashboardSummary = async () => {
     setLoadingSummary(true);
     // Genel özet
-    const res = await fetch(`http://${API_URL}/api/dashboard-summary/`);
+    const res = await fetch(`${API_URL}/api/dashboard-summary/`);
     const data = await res.json();
     setSummary(data);
 
     // Günlük analizler
-    const res2 = await fetch(`http://${API_URL}/api/analysis-results/`);
+    const res2 = await fetch(`${API_URL}/api/analysis-results/`);
     const data2 = await res2.json();
     setAnalysisResults(data2);
 
@@ -74,7 +74,7 @@ const Dashboard: React.FC = () => {
     const formData = new FormData();
     formData.append("file", menuFile);
 
-    const res = await fetch(`http://${API_URL}/api/weekly-menu-upload/`, {
+    const res = await fetch(`${API_URL}/api/weekly-menu-upload/`, {
       method: "POST",
       body: formData,
     });
@@ -109,7 +109,7 @@ const Dashboard: React.FC = () => {
     formData.append("day", selectedDay);
 
     // 1. Fotoğrafları yükle
-    const res = await fetch(`http://${API_URL}/api/upload/`, {
+    const res = await fetch(`${API_URL}/api/upload/`, {
       method: "POST",
       body: formData,
     });
@@ -123,7 +123,7 @@ const Dashboard: React.FC = () => {
 
     // 2. Yüklenen her fotoğraf için analiz isteği at
     for (const url of uploadedUrls) {
-      await fetch(`http://${API_URL}/api/analysis/`, {
+      await fetch(`${API_URL}/api/analysis/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -72,7 +72,7 @@ function App() {
     fullName: string
   ) => {
     try {
-      const response = await fetch("http://${API_URL}/api/register/", {
+      const response = await fetch("${API_URL}/api/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -96,7 +96,7 @@ function App() {
   // Giriş fonksiyonu (API)
   const handleLogin = async (username: string, password: string) => {
     try {
-      const response = await fetch("http://${API_URL}/api/login/", {
+      const response = await fetch("${API_URL}/api/login/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
