@@ -1,0 +1,11 @@
+django==5.0.14
+mssql-django
+pyodbc
+djangorestframework
+django-cors-headers
+numpy
+torch
+opencv-python
+Pillow
+google-auth
+google-cloud-storage

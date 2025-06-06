@@ -1,0 +1,29 @@
+*.json
+wise-*.json
+backend/wise-453820-*.json
+
+# Sanal ortam ve pycache
+venv/
+__pycache__/
+*.pyc
+
+# Büyük dosya türleri ve modeller
+*.pkl
+*.pt
+*.h5
+*.jpg
+*.png
+
+# Node ve diğer sıkıntılı klasörler
+node_modules/
+uploads/
+media/
+
+# IDE dosyaları (VSCode, PyCharm vs)
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Loglar
+*.log
