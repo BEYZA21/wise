@@ -1,6 +1,6 @@
 #!/bin/bash
 pip install gdown
-
+mkdir-p backend/yolov5/weights
 gdown --id 1Tjp3Ga2b2IIMuiKSjMbWV_8o2PASQzwW -O backend/yolov5/weights/wisePlate.pt
 gdown --id 1sbHqVBvtlFhYksyCV6YA7QK_DinlXnQR -O backend/yolov5/weights/wiseTypeSoup.pt
 gdown --id 1BJjsNDfe5pqn1Btd-CVs03RaU8GGAfqu -O backend/yolov5/weights/wiseSoup.pt
