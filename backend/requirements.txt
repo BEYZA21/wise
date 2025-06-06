@@ -145,7 +145,6 @@ ultralytics-thop==2.0.10
 uritemplate==4.1.1
 urllib3==2.2.3
 virtualenv==20.26.4
-VirtualEnvironment==0.1.2
 Werkzeug==3.1.3
 wheel==0.44.0
 wrapt==1.17.1
