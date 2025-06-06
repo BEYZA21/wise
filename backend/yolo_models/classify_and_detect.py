@@ -40,7 +40,7 @@ MODEL_BASE_PATH = Path("C:/Users/HP/Desktop/WISE/backend/yolov5/weights")
 BUCKET_NAME = "wise-uploads"
 GCS_PREFIX = "processed"
 creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-gcs_client = storage.Client.from_service_account_json(creds_path)
+
 bucket = gcs_client.bucket(BUCKET_NAME)
 
 # Normalize ve resize transform işlemleri
