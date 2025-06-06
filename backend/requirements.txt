@@ -10,3 +10,4 @@ Pillow
 google-auth
 google-cloud-storage
 gunicorn
+gdown
