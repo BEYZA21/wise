@@ -16,7 +16,9 @@ print("EXISTS?", os.path.exists(GS_CREDENTIALS))
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-SECRET_KEY = 'django-insecure-0$^ldpx&a0kfrm8$747n&qfnhbkykybd4!9r72%jp)d!r*2x-6'
+import os
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+
 DEBUG = False
 
 
