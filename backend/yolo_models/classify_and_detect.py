@@ -1,23 +1,26 @@
 import os
 import sys
-import uuid
+import json
+import base64
 import pathlib
 import requests
-import base64
-import json
 from pathlib import Path
-from datetime import datetime
+from io import BytesIO
+from PIL import Image
+import torch
+import torchvision.transforms as transforms
 from google.cloud import storage
 from google.oauth2 import service_account
 
-# Windows için Path desteği
+# Windows uyumu
 if sys.platform == "win32":
     pathlib.PosixPath = pathlib.WindowsPath
 
-MODEL_BASE_PATH = Path("yolov5/weights")
+# GCS Ayarları
 BUCKET_NAME = "wise-uploads"
 GCS_PREFIX = "processed"
 
+# GCS Bağlantısı
 try:
     base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
     creds_json = json.loads(base64.b64decode(base64_creds).decode("utf-8"))
@@ -28,21 +31,56 @@ except Exception as e:
     print("🚨 GCS bağlantı hatası:", str(e))
     bucket = None
 
+# Model ID listesi
+MODEL_DRIVE_IDS = {
+    "wisePlate.pt": "1Tjp3Ga2b2IIMuiKSjMbWV_8o2PASQzwW",
+    "wiseTypeSoup.pt": "1sbHqVBvtlFhYksyCV6YA7QK_DinlXnQR",
+    "wiseSoup.pt": "1BJjsNDfe5pqn1Btd-CVs03RaU8GGAfqu",
+    "wiseMainTypeCls-yolo5.pt": "181OutK-60HKy0WT-mDOvZOKkjjrM9sjK",
+    "wiseSideTypeCls-yolo5.pt": "1QFNkEMPoCB0ZEF5wq2sp5v1G1fmoNXnZ",
+    "wiseSideCls-yolo5.pt": "1uWRaVV46g-OdTFHLBExboWamBybzD-YL",
+    "wiseExtraTypeCls-yolo5.pt": "1gEuh7AEqqk5gMvEsdftnwhu4tXDfKxSS",
+    "wiseExtraCls-yolo5-yolo5.pt": "1TfzrpbpdM5XM210Jzuk-q96UTgngMrd4",
+    "wiseMainCls-yolo5-yolo5.pt": "1vXG5fjcJhaAwsFMp-xE0udCu_UQZhC4h"
+}
 
-bucket = gcs_client.bucket(BUCKET_NAME)
-
+# Model klasörü
+MODEL_BASE_PATH = Path("tmp_models")
 loaded_models = {}
 
+# Otomatik model indirici
+def download_from_gdrive(model_filename):
+    if model_filename not in MODEL_DRIVE_IDS:
+        raise ValueError(f"Model ID bulunamadı: {model_filename}")
+
+    dest_path = MODEL_BASE_PATH / model_filename
+    if dest_path.exists():
+        print(f"✅ Model zaten var: {dest_path}")
+        return dest_path
+
+    os.makedirs(MODEL_BASE_PATH, exist_ok=True)
+    file_id = MODEL_DRIVE_IDS[model_filename]
+    url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    print(f"📥 Model indiriliyor: {model_filename}")
+
+    response = requests.get(url)
+    response.raise_for_status()
+    with open(dest_path, "wb") as f:
+        f.write(response.content)
+
+    print(f"✅ Model indirildi: {model_filename}")
+    return dest_path
+
+# Model yükleyici
 def load_model(model_filename):
-    import torch
-    model_path = MODEL_BASE_PATH / model_filename
     if model_filename not in loaded_models:
+        model_path = download_from_gdrive(model_filename)
         model = torch.hub.load('ultralytics/yolov5', 'custom', path=str(model_path), force_reload=False)
         model.eval()
         loaded_models[model_filename] = model
     return loaded_models[model_filename]
 
-# Yemek türleri ve modeller
+# Kategori ve sınıf eşleştirmeleri
 FOOD_TYPES = {
     'corba': {
         0: 'mercimek-corbasi',
@@ -82,14 +120,13 @@ TYPE_MODELS = {
 }
 
 WASTE_MODELS = {
-    "ana-yemek": "wiseMainCls-yolo5.pt",
+    "ana-yemek": "wiseMainCls-yolo5-yolo5.pt",
     "corba": "wiseSoup.pt",
-    "ek-yemek": "wiseExtraCls-yolo5.pt",
+    "ek-yemek": "wiseExtraCls-yolo5-yolo5.pt",
     "yan-yemek": "wiseSideCls-yolo5.pt"
 }
 
 def get_transform():
-    import torchvision.transforms as transforms
     return transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.CenterCrop((224, 224)),
@@ -97,20 +134,15 @@ def get_transform():
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
+# Ana analiz fonksiyonu
 def analyze_image_from_url(image_url_or_path=None, category=None, tensor=None):
     try:
         if category not in TYPE_MODELS or category not in WASTE_MODELS:
             return {"error": f"Geçersiz kategori: {category}"}
-        import torch
-        import torchvision.transforms as transforms
-        from PIL import Image
-        from io import BytesIO
-        import numpy as np
 
         transform = get_transform()
 
         if tensor is None:
-            # URL ya da path üzerinden yükle
             if os.path.isfile(image_url_or_path):
                 image = Image.open(image_url_or_path).convert("RGB")
             else:
@@ -119,7 +151,7 @@ def analyze_image_from_url(image_url_or_path=None, category=None, tensor=None):
                 image = Image.open(BytesIO(response.content)).convert("RGB")
             tensor = transform(image).unsqueeze(0)
 
-        # Model yükle
+        # Tür tahmini
         type_model = load_model(TYPE_MODELS[category])
         with torch.no_grad():
             type_out = type_model(tensor)
@@ -129,6 +161,7 @@ def analyze_image_from_url(image_url_or_path=None, category=None, tensor=None):
         type_conf = round(probs[type_idx].item(), 4)
         type_name = FOOD_TYPES[category].get(type_idx, f"type_{type_idx}")
 
+        # İsraf tahmini
         waste_model = load_model(WASTE_MODELS[category])
         with torch.no_grad():
             waste_out = waste_model(tensor)
@@ -136,10 +169,7 @@ def analyze_image_from_url(image_url_or_path=None, category=None, tensor=None):
         waste_probs = torch.nn.functional.softmax(waste_out[0], dim=0)
         waste_idx = waste_probs.argmax().item()
         waste_conf = round(waste_probs[waste_idx].item(), 4)
-
         israf = "israf-yok" if waste_idx == 1 else "israf-var"
-        print(f"🍲 Type index: {type_idx}, confidence: {type_conf}")
-        print(f"🗑️ Waste index: {waste_idx}, confidence: {waste_conf}")
 
         return {
             "kategori": category,
@@ -151,10 +181,12 @@ def analyze_image_from_url(image_url_or_path=None, category=None, tensor=None):
         }
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"error": str(e)}
 
+# Klasördeki tüm görselleri analiz et (isteğe bağlı)
 def analyze_directory(input_folder, category):
-    """Bir klasördeki tüm görüntüleri analiz eder."""
     image_files = [
         os.path.join(input_folder, f)
         for f in os.listdir(input_folder)
@@ -164,7 +196,7 @@ def analyze_directory(input_folder, category):
     for image_path in image_files:
         try:
             result = analyze_image_from_url(image_path, category)
-            print(f"\n{os.path.basename(image_path)} sonucu:")
+            print(f"\n📷 {os.path.basename(image_path)} sonucu:")
             print(result)
         except Exception as e:
-            print(f"Hata oluştu: {image_path}, Hata: {e}")
+            print(f"❌ Hata: {image_path}, {e}")

@@ -121,9 +121,17 @@ from yolo_models.cropper import crop_and_save
 from yolo_models.image_loader import load_image_from_url
 from .models import AnalysisResult  # Modelini buraya ekle
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+
+from users.models import AnalysisResult
+from yolo_models.image_loader import load_image_from_url
+from yolo_models.cropper import crop_and_save  # fonksiyon burada olsun
+
 class AnalyzeFoodView(APIView):
     permission_classes = [AllowAny]
-    
+
     def post(self, request):
         image_url = request.data.get("image_url")
         photo_day = request.data.get("photo_day")
@@ -133,51 +141,51 @@ class AnalyzeFoodView(APIView):
         if not photo_day:
             return Response({"error": "photo_day alanı zorunludur."}, status=400)
 
-        img0 = load_image_from_url(image_url)
-        if img0 is None:
-            return Response({"error": "Görsel indirilemedi."}, status=400)
-
-        original_filename = image_url.split("/")[-1]
-        
         try:
-            # crop_and_save her zaman liste döndürsün!
-            results = crop_and_save(
-                img0,
-                original_filename=original_filename,
-                photo_day=photo_day
-            )
+            print("🔗 Görsel indiriliyor:", image_url)
+            img0 = load_image_from_url(image_url)
+            if img0 is None:
+                return Response({"error": "Görsel indirilemedi."}, status=400)
+
+            original_filename = image_url.split("/")[-1]
+            print("✂️ Görsel kırpılıyor ve analiz ediliyor...")
+            results = crop_and_save(img0, original_filename=original_filename, photo_day=photo_day)
+
+            if not results or len(results) == 0:
+                return Response({"error": "Hiçbir yemek tespit edilemedi."}, status=200)
+
+            analysis_results = []
+            for result in results:
+                try:
+                    food_category = result.get("food_category", "")
+                    food_type = result.get("food_type", "")
+                    is_waste = result.get("is_waste", False)
+                    cropped_image_url = result.get("image_url", image_url)
+
+                    obj, created = AnalysisResult.objects.update_or_create(
+                        image_url=cropped_image_url,
+                        defaults={
+                            "food_category": food_category,
+                            "food_type": food_type,
+                            "is_waste": is_waste,
+                            "photo_day": photo_day
+                        }
+                    )
+                    analysis_results.append(result)
+                except Exception as db_err:
+                    print("💥 DB Hatası:", db_err)
+                    result["db_error"] = str(db_err)
+                    analysis_results.append(result)
+
+            return Response({
+                "message": "Analiz tamamlandı",
+                "results": analysis_results
+            }, status=200)
+
         except Exception as e:
-            return Response({"error": f"crop_and_save hatası: {str(e)}"}, status=500)
-        
-        if not results or len(results) == 0:
-            return Response({"error": "Hiçbir yemek tespit edilemedi."}, status=200)
-
-        analysis_results = []
-        for result in results:
-            try:
-                food_category = result.get("food_category", "")
-                food_type = result.get("food_type", "")
-                is_waste = result.get("is_waste", False)
-                cropped_image_url = result.get("image_url", image_url)
-                obj, created = AnalysisResult.objects.update_or_create(
-                    image_url=cropped_image_url,
-                    defaults={
-                        "food_category": food_category,
-                        "food_type": food_type,
-                        "is_waste": is_waste,
-                        "photo_day": photo_day
-                    }
-                )
-                analysis_results.append(result)
-            except Exception as e:
-                # Bu crop sonucu kayıt hatasını da response'a ekle
-                result["db_error"] = str(e)
-                analysis_results.append(result)
-
-        return Response({
-            "message": "Analiz tamamlandı",
-            "results": analysis_results
-        }, status=200)
+            import traceback
+            traceback.print_exc()
+            return Response({"error": f"Sunucu hatası: {str(e)}"}, status=500)
 
 # ========== ANALİZ SONUÇ LİSTESİ ==========
 class ListAnalysisResultsView(ListAPIView):
