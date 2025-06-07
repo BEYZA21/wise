@@ -1,16 +1,17 @@
 import os
 from google.oauth2 import service_account
-
+import base64
+import json
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SERVICE_ACCOUNT_PATH = os.environ.get(
-    "GOOGLE_SERVICE_ACCOUNT_JSON",
-    os.path.join(BASE_DIR, "wise-453820-9eb472780e68.json")
-)
-GS_CREDENTIALS = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_PATH)
+base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_BASE64")
+if base64_creds is None:
+    raise Exception("Service account key not found!")
+creds_json = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
+GS_CREDENTIALS = service_account.Credentials.from_service_account_info(creds_json)
 
-print("JSON PATH:", SERVICE_ACCOUNT_PATH)
-print("EXISTS?", os.path.exists(SERVICE_ACCOUNT_PATH))
+print("JSON PATH:", GS_CREDENTIALS)
+print("EXISTS?", os.path.exists(GS_CREDENTIALS))
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
