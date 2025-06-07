@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 import csv
@@ -12,7 +13,16 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import AllowAny
 from rest_framework.generics import ListAPIView
-
+import os
+import uuid
+import json
+import base64
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import AllowAny
+from google.cloud import storage
+from google.oauth2 import service_account
 from google.cloud import storage
 from dotenv import load_dotenv
 
@@ -66,10 +76,8 @@ DAYS_TR = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi",
 gun = DAYS_TR[datetime.datetime.now().weekday()]
 
 # ========== FOTOĞRAF YÜKLEME ==========
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-import traceback
+
+
 class UploadPhotoView(APIView):
     parser_classes = [MultiPartParser, FormParser]
     permission_classes = [AllowAny]
@@ -80,25 +88,27 @@ class UploadPhotoView(APIView):
             return Response({'error': 'Fotoğraf bulunamadı.'}, status=400)
 
         uploaded_urls = []
+
+        # GCS bağlantısı (base64 ile)
         try:
-            # GCS bağlantısı - BASE64'den kimlik bilgisi alınıyor
             base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
-            creds_dict = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
-            credentials = service_account.Credentials.from_service_account_info(creds_dict)
-            client = storage.Client(credentials=credentials)
-            bucket = client.bucket('wise-uploads')
+            creds_json = json.loads(base64.b64decode(base64_creds).decode("utf-8"))
+            credentials = service_account.Credentials.from_service_account_info(creds_json)
+            gcs_client = storage.Client(credentials=credentials)
+            bucket = gcs_client.bucket("wise-uploads")
         except Exception as e:
             return Response({'error': f'GCS bağlantı hatası: {str(e)}'}, status=500)
 
+        # Fotoğrafları yükle
         for file in files:
             try:
-                blob_name = f'uploads/{uuid.uuid4()}_{file.name}'
+                blob_name = f"uploads/{uuid.uuid4()}_{file.name}"
                 blob = bucket.blob(blob_name)
                 blob.upload_from_file(file, content_type=file.content_type)
                 url = f"https://storage.googleapis.com/wise-uploads/{blob_name}"
                 uploaded_urls.append(url)
             except Exception as e:
-                return Response({"error": str(e)}, status=500)
+                return Response({"error": f"Dosya yüklenemedi: {str(e)}"}, status=500)
 
         return Response({'message': 'Yükleme başarılı!', 'uploaded_urls': uploaded_urls}, status=200)
 
