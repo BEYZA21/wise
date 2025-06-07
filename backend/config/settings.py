@@ -9,6 +9,8 @@ if base64_creds is None:
     raise Exception("Service account key not found!")
 creds_json = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
 GS_CREDENTIALS = service_account.Credentials.from_service_account_info(creds_json)
+import os
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "wise-pr89.onrender.com,localhost,127.0.0.1").split(",")
 
 # print("JSON PATH:", GS_CREDENTIALS)
 # print("EXISTS?", os.path.exists(GS_CREDENTIALS))
@@ -23,12 +25,6 @@ DEBUG = False
 
 
 GS_BUCKET_NAME = 'wise-uploads'
-ALLOWED_HOSTS = [
-    'wise-pr89.onrender.com',  # Render domainin
-    'localhost',
-    '127.0.0.1',
-    # Gerekirse diğer domainler
-]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
