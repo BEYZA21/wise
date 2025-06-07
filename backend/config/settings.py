@@ -6,13 +6,14 @@ from google.oauth2 import service_account
 # Temel dizin
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Google Cloud credentials
-base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_BASE64")
-if base64_creds is None:
-    raise Exception("Service account key not found!")
-creds_json = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
-GS_CREDENTIALS = service_account.Credentials.from_service_account_info(creds_json)
-GS_BUCKET_NAME = 'wise-uploads'
+try:
+    base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_BASE64")
+    print("✅ CREDS RAW EXISTS:", bool(base64_creds))
+    creds_json = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
+    GS_CREDENTIALS = service_account.Credentials.from_service_account_info(creds_json)
+except Exception as e:
+    print("🚨 GCS Auth Error:", e)
+    raise
 
 # Django anahtarları ve güvenlik ayarları
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")

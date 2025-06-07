@@ -66,6 +66,11 @@ DAYS_TR = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi",
 gun = DAYS_TR[datetime.datetime.now().weekday()]
 
 # ========== FOTOĞRAF YÜKLEME ==========
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+import traceback
+
 class UploadPhotoView(APIView):
     parser_classes = [MultiPartParser, FormParser]
     permission_classes = [AllowAny]
@@ -94,8 +99,9 @@ class UploadPhotoView(APIView):
                 uploaded_urls.append(url)
                 # AnalysisResult.objects.create(...)  <--- BURAYI SİL
             except Exception as e:
-                return Response({'error': f'Dosya yükleme hatası: {str(e)}'}, status=500)
-
+                print("[UPLOAD HATASI]:", e)
+                traceback.print_exc()
+                return Response({"error": str(e)}, status=500)
         return Response({'message': 'Yükleme başarılı!', 'uploaded_urls': uploaded_urls}, status=200)
 
 # ========== ANALİZ ==========
@@ -192,51 +198,6 @@ class DashboardSummaryView(APIView):
             "percent": percent
         })
 
-# ========== MENÜ YÜKLEME ==========
-class WeeklyMenuUpload(APIView):
-    permission_classes = [AllowAny]
-    def post(self, request):
-        start_date = request.POST.get('start_date')
-        if not start_date:
-            today = date.today()
-            start_date = today - timedelta(days=today.weekday())
-        weekly_menu = WeeklyMenu.objects.create(start_date=start_date)
-        
-        menu_file = request.FILES.get('file')  # form-data'da alan adı "file" olacak!
-        if not menu_file:
-            return Response({"error": "menu_file alanı zorunludur."}, status=400)
-
-        menu_file.seek(0)
-        raw_data = menu_file.read()
-        detected = chardet.detect(raw_data)
-        encoding = detected['encoding'] if detected['encoding'] else 'utf-8'
-        print(f"[DEBUG] Dosyanın encoding'i: {encoding}")
-        decoded_file = raw_data.decode(encoding).splitlines()
-
-        import csv
-        reader = csv.DictReader(decoded_file)
-        for row in reader:
-            DailyMenu.objects.create(
-                weekly_menu=weekly_menu,
-                date=row.get('date', ''),
-                soup=row.get('soup', ''),
-                main_dish=row.get('main_dish', ''),
-                main_dish_2=row.get('main_dish_2', ""),  # HATA düzeltildi!
-                side_dish=row.get('side_dish', ''),
-                side_dish_2=row.get('side_dish_2', ""),
-                extra=row.get('extra', '')
-            )
-        return Response({"message": "Menü yüklendi."})
-
-class WeeklyMenuListView(ListAPIView):
-    queryset = WeeklyMenu.objects.all().order_by('-start_date')
-    serializer_class = WeeklyMenuSerializer
-    permission_classes = [AllowAny]
-
-class DailyMenuListView(ListAPIView):
-    queryset = DailyMenu.objects.all().order_by('date')
-    serializer_class = DailyMenuSerializer
-    permission_classes = [AllowAny]
 
 class PhotoListView(APIView):
     def get(self, request):

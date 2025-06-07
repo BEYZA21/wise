@@ -13,11 +13,6 @@ type Summary = {
 };
 
 const Dashboard: React.FC = () => {
-  // Menü yükleme
-  const [menuUploaded, setMenuUploaded] = useState<boolean>(false);
-  const [menuFile, setMenuFile] = useState<File | null>(null);
-  const [menuLoading, setMenuLoading] = useState<boolean>(false);
-
   // Fotoğraf yükleme
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -60,27 +55,9 @@ const Dashboard: React.FC = () => {
 
     setLoadingSummary(false);
   };
-
   useEffect(() => {
     fetchDashboardSummary();
-    // eslint-disable-next-line
-  }, [menuUploaded]);
-
-  // MENÜ YÜKLEME
-  const handleMenuUpload = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!menuFile) return;
-    setMenuLoading(true);
-    const formData = new FormData();
-    formData.append("file", menuFile);
-
-    const res = await fetch(`${API_URL}/api/weekly-menu-upload/`, {
-      method: "POST",
-      body: formData,
-    });
-    setMenuLoading(false);
-    if (res.ok) setMenuUploaded(true);
-  };
+  }, []);
 
   // FOTOĞRAF SEÇME
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,42 +130,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto py-8">
-      {/* MENÜ YÜKLEME */}
-      <div className="mb-8">
-        {menuUploaded ? (
-          <div className="bg-green-50 border border-green-400 rounded-lg p-4 flex items-center justify-center min-h-[100px]">
-            <span className="text-green-700 font-semibold">
-              Menü başarıyla yüklendi!
-            </span>
-          </div>
-        ) : (
-          <form
-            onSubmit={handleMenuUpload}
-            className="bg-gray-50 border rounded-lg p-4 flex flex-col items-center min-h-[100px]"
-          >
-            <label className="text-sm font-medium mb-1">
-              Menü Yükle (.txt veya .csv)
-            </label>
-            <input
-              type="file"
-              accept=".txt,.csv"
-              onChange={(e) =>
-                setMenuFile(e.target.files ? e.target.files[0] : null)
-              }
-              className="mb-2"
-              required
-            />
-            <button
-              type="submit"
-              disabled={menuLoading || !menuFile}
-              className="bg-[#7BC47F] text-white px-3 py-1 rounded hover:bg-[#6AB36E] text-sm"
-            >
-              {menuLoading ? "Yükleniyor..." : "Menüyü Kaydet"}
-            </button>
-          </form>
-        )}
-      </div>
-
       {/* FOTOĞRAF YÜKLEME */}
       <div className="bg-white rounded-xl shadow-lg p-6 border flex flex-col gap-6">
         {/* GÜN SEÇİMİ */}
