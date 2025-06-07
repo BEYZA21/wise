@@ -10,8 +10,8 @@ if base64_creds is None:
 creds_json = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
 GS_CREDENTIALS = service_account.Credentials.from_service_account_info(creds_json)
 
-print("JSON PATH:", GS_CREDENTIALS)
-print("EXISTS?", os.path.exists(GS_CREDENTIALS))
+# print("JSON PATH:", GS_CREDENTIALS)
+# print("EXISTS?", os.path.exists(GS_CREDENTIALS))
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
