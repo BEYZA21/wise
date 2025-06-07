@@ -9,7 +9,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://${API_URL}', // backend portunu gir
+      '/api': process.env.VITE_API_URL || 'http://localhost:3000',
     }
+    
   }
 });
