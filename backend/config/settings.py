@@ -21,7 +21,7 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "wise-pr89.onrender.com,localhost,127
 
 # HTTPS/SSL proxy için ayarlar (Render prod ortamı için zorunlu)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
