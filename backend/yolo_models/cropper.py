@@ -11,14 +11,20 @@ import base64
 import json
 from google.cloud import storage
 from google.oauth2 import service_account
+from io import BytesIO
 
 # GCS Credential Setup (globalde sadece bu olabilir)
-base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_BASE64")
-if base64_creds is None:
-    raise Exception("Service account key not found!")
-creds_json = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
+import base64
+import json
+from google.oauth2 import service_account
+
+base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+creds_json = json.loads(base64.b64decode(base64_creds).decode("utf-8"))
 credentials = service_account.Credentials.from_service_account_info(creds_json)
-gcs_client = storage.Client(credentials=credentials, project=credentials.project_id)
+
+from google.cloud import storage
+gcs_client = storage.Client(credentials=credentials)
+
 BUCKET_NAME = "wise-uploads"
 GCS_PREFIX = "processed"
 bucket = gcs_client.bucket(BUCKET_NAME)

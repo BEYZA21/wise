@@ -18,15 +18,16 @@ MODEL_BASE_PATH = Path("yolov5/weights")
 BUCKET_NAME = "wise-uploads"
 GCS_PREFIX = "processed"
 
-# GCS Credentials
-base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_BASE64")
-if base64_creds:
-    creds_json = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
+try:
+    base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+    creds_json = json.loads(base64.b64decode(base64_creds).decode("utf-8"))
     credentials = service_account.Credentials.from_service_account_info(creds_json)
-    gcs_client = storage.Client(credentials=credentials, project=credentials.project_id)
-else:
-    creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-    gcs_client = storage.Client.from_service_account_json(creds_path)
+    gcs_client = storage.Client(credentials=credentials)
+    bucket = gcs_client.bucket(BUCKET_NAME)
+except Exception as e:
+    print("🚨 GCS bağlantı hatası:", str(e))
+    bucket = None
+
 
 bucket = gcs_client.bucket(BUCKET_NAME)
 

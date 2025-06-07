@@ -2,12 +2,16 @@ import os
 import base64
 import json
 from google.oauth2 import service_account
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # .env dosyasını yükler
 
 # Temel dizin
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_BASE64")
+    base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
     print("✅ CREDS RAW EXISTS:", bool(base64_creds))
     creds_json = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
     GS_CREDENTIALS = service_account.Credentials.from_service_account_info(creds_json)
@@ -56,7 +60,12 @@ MIDDLEWARE = [
 ]
 
 # CORS ayarları (React ile sorunsuz)
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS
+
+CORS_ALLOWED_ORIGINS = [
+    "https://wise-nine.vercel.app",  # Vercel URL'in tam hali
+]
+
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     "accept", "accept-encoding", "authorization", "content-type", "dnt",

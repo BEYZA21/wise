@@ -70,7 +70,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 import traceback
-
 class UploadPhotoView(APIView):
     parser_classes = [MultiPartParser, FormParser]
     permission_classes = [AllowAny]
@@ -80,16 +79,17 @@ class UploadPhotoView(APIView):
         if not files:
             return Response({'error': 'Fotoğraf bulunamadı.'}, status=400)
 
-        
         uploaded_urls = []
-        # Google Cloud Storage bağlantısı
         try:
-            creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-            client = storage.Client.from_service_account_json(creds_path)
+            # GCS bağlantısı - BASE64'den kimlik bilgisi alınıyor
+            base64_creds = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+            creds_dict = json.loads(base64.b64decode(base64_creds).decode('utf-8'))
+            credentials = service_account.Credentials.from_service_account_info(creds_dict)
+            client = storage.Client(credentials=credentials)
             bucket = client.bucket('wise-uploads')
         except Exception as e:
             return Response({'error': f'GCS bağlantı hatası: {str(e)}'}, status=500)
-        # UploadPhotoView
+
         for file in files:
             try:
                 blob_name = f'uploads/{uuid.uuid4()}_{file.name}'
@@ -97,12 +97,11 @@ class UploadPhotoView(APIView):
                 blob.upload_from_file(file, content_type=file.content_type)
                 url = f"https://storage.googleapis.com/wise-uploads/{blob_name}"
                 uploaded_urls.append(url)
-                # AnalysisResult.objects.create(...)  <--- BURAYI SİL
             except Exception as e:
-                print("[UPLOAD HATASI]:", e)
-                traceback.print_exc()
                 return Response({"error": str(e)}, status=500)
+
         return Response({'message': 'Yükleme başarılı!', 'uploaded_urls': uploaded_urls}, status=200)
+
 
 # ========== ANALİZ ==========
 from rest_framework.views import APIView
