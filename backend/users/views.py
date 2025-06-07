@@ -25,6 +25,8 @@ from google.cloud import storage
 from google.oauth2 import service_account
 from google.cloud import storage
 from dotenv import load_dotenv
+from rest_framework.parsers import JSONParser
+from rest_framework.decorators import parser_classes
 
 
 from .models import AnalysisResult, WeeklyMenu, DailyMenu
@@ -39,6 +41,7 @@ User = get_user_model()
 
 # ========== LOGIN ==========
 @method_decorator(csrf_exempt, name='dispatch')
+@parser_classes([JSONParser])
 class LoginView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
@@ -54,6 +57,7 @@ class LoginView(APIView):
 
 # ========== REGISTER ==========
 @method_decorator(csrf_exempt, name='dispatch')
+@parser_classes([JSONParser])
 class RegisterView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
@@ -77,7 +81,7 @@ gun = DAYS_TR[datetime.datetime.now().weekday()]
 
 # ========== FOTOĞRAF YÜKLEME ==========
 
-
+@parser_classes([JSONParser])
 class UploadPhotoView(APIView):
     parser_classes = [MultiPartParser, FormParser]
     permission_classes = [AllowAny]
@@ -129,6 +133,7 @@ from users.models import AnalysisResult
 from yolo_models.image_loader import load_image_from_url
 from yolo_models.cropper import crop_and_save  # fonksiyon burada olsun
 
+@parser_classes([JSONParser])
 class AnalyzeFoodView(APIView):
     permission_classes = [AllowAny]
 
@@ -188,6 +193,7 @@ class AnalyzeFoodView(APIView):
             return Response({"error": f"Sunucu hatası: {str(e)}"}, status=500)
 
 # ========== ANALİZ SONUÇ LİSTESİ ==========
+@parser_classes([JSONParser])
 class ListAnalysisResultsView(ListAPIView):
     serializer_class = AnalysisResultSerializer
     permission_classes = [AllowAny]
@@ -200,6 +206,7 @@ class ListAnalysisResultsView(ListAPIView):
         return queryset
 
 # ========== DASHBOARD GENEL ÖZET ==========
+@parser_classes([JSONParser])
 class DashboardSummaryView(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
@@ -215,7 +222,7 @@ class DashboardSummaryView(APIView):
             "percent": percent
         })
 
-
+@parser_classes([JSONParser])
 class PhotoListView(APIView):
     def get(self, request):
         bucket_name = "wise-uploads"
