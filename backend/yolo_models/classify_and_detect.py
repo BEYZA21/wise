@@ -8,7 +8,6 @@ from pathlib import Path
 from io import BytesIO
 from PIL import Image
 import torch
-import torchvision.transforms as transforms
 from google.cloud import storage
 from google.oauth2 import service_account
 
@@ -44,11 +43,10 @@ MODEL_DRIVE_IDS = {
     "wiseMainCls-yolo5-yolo5.pt": "1vXG5fjcJhaAwsFMp-xE0udCu_UQZhC4h"
 }
 
-# Model klasörü
 MODEL_BASE_PATH = Path("tmp_models")
 loaded_models = {}
 
-# Otomatik model indirici
+# === Model indirme ===
 def download_from_gdrive(model_filename):
     if model_filename not in MODEL_DRIVE_IDS:
         raise ValueError(f"Model ID bulunamadı: {model_filename}")
@@ -71,7 +69,7 @@ def download_from_gdrive(model_filename):
     print(f"✅ Model indirildi: {model_filename}")
     return dest_path
 
-# Model yükleyici
+# === Model yükleme ===
 def load_model(model_filename):
     if model_filename not in loaded_models:
         model_path = download_from_gdrive(model_filename)
@@ -80,7 +78,17 @@ def load_model(model_filename):
         loaded_models[model_filename] = model
     return loaded_models[model_filename]
 
-# Kategori ve sınıf eşleştirmeleri
+# === Lazy transform ===
+def get_transform():
+    import torchvision.transforms as transforms  # Lazy import
+    return transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.CenterCrop((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+
+# === Kategori eşleştirmeleri ===
 FOOD_TYPES = {
     'corba': {
         0: 'mercimek-corbasi',
@@ -126,15 +134,7 @@ WASTE_MODELS = {
     "yan-yemek": "wiseSideCls-yolo5.pt"
 }
 
-def get_transform():
-    return transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.CenterCrop((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-
-# Ana analiz fonksiyonu
+# === Ana analiz fonksiyonu ===
 def analyze_image_from_url(image_url_or_path=None, category=None, tensor=None):
     try:
         if category not in TYPE_MODELS or category not in WASTE_MODELS:
@@ -151,7 +151,6 @@ def analyze_image_from_url(image_url_or_path=None, category=None, tensor=None):
                 image = Image.open(BytesIO(response.content)).convert("RGB")
             tensor = transform(image).unsqueeze(0)
 
-        # Tür tahmini
         type_model = load_model(TYPE_MODELS[category])
         with torch.no_grad():
             type_out = type_model(tensor)
@@ -161,7 +160,6 @@ def analyze_image_from_url(image_url_or_path=None, category=None, tensor=None):
         type_conf = round(probs[type_idx].item(), 4)
         type_name = FOOD_TYPES[category].get(type_idx, f"type_{type_idx}")
 
-        # İsraf tahmini
         waste_model = load_model(WASTE_MODELS[category])
         with torch.no_grad():
             waste_out = waste_model(tensor)
@@ -185,7 +183,7 @@ def analyze_image_from_url(image_url_or_path=None, category=None, tensor=None):
         traceback.print_exc()
         return {"error": str(e)}
 
-# Klasördeki tüm görselleri analiz et (isteğe bağlı)
+# === İsteğe bağlı klasör analizi ===
 def analyze_directory(input_folder, category):
     image_files = [
         os.path.join(input_folder, f)

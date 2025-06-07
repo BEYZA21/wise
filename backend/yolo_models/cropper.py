@@ -1,28 +1,30 @@
 import os
+import json
+import base64
 import requests
 import numpy as np
 from PIL import Image
 from io import BytesIO
 import torch
-import torchvision.transforms as transforms
 
 from users.models import AnalysisResult
 from google.cloud import storage
 from google.oauth2 import service_account
 
-# ========== Ortam Ayarları ==========
+from yolo_models.classify_and_detect import analyze_image_from_url
+
+# === Ayarlar ===
 BUCKET_NAME = "wise-uploads"
 GCS_PREFIX = "processed"
 MODEL_ID = "1Tjp3Ga2b2IIMuiKSjMbWV_8o2PASQzwW"  # wisePlate.pt
 
-# ========== GCS Bağlantısı ==========
-import base64, json
+# === GCS Bağlantısı ===
 creds_data = json.loads(base64.b64decode(os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")).decode("utf-8"))
 credentials = service_account.Credentials.from_service_account_info(creds_data)
 gcs_client = storage.Client(credentials=credentials)
 bucket = gcs_client.bucket(BUCKET_NAME)
 
-# ========== Model ve Dönüştürme ==========
+# === Model Yükleme (Lazy + Cache) ===
 _plate_model = None
 
 def download_from_gdrive(gdrive_id, dest_path):
@@ -46,20 +48,15 @@ def get_plate_model():
     return _plate_model
 
 def get_transform():
+    # Lazy import: RAM dostu
+    import torchvision.transforms as transforms
     return transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
-# ========== Ana İşlev: crop_and_save ==========
-from yolo_models.classify_and_detect import analyze_image_from_url
-
-already_processed_urls = set()
-
-def analysis_result_exists(image_url):
-    return AnalysisResult.objects.filter(image_url=image_url).exists()
-
+# === Ana Fonksiyon ===
 def crop_and_save(image, original_filename="", photo_day=None):
     uploaded_results = []
 
@@ -117,7 +114,6 @@ def crop_and_save(image, original_filename="", photo_day=None):
 
                 image_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{new_blob_path}"
 
-                # Sonuç nesnesi
                 result.update({
                     "image_url": image_url,
                     "food_category": category,
