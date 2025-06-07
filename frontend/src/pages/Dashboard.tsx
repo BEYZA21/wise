@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Upload, X, Loader2 } from "lucide-react";
 import { API_URL } from "../config";
-// veya '../config.js'
 
 const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 
@@ -12,17 +11,18 @@ type Summary = {
   percent: number;
 };
 
+type AnalysisResult = {
+  photo_day: string;
+  is_waste: boolean;
+};
+
 const Dashboard: React.FC = () => {
-  // Fotoğraf yükleme
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Gün seçimi
   const [selectedDay, setSelectedDay] = useState<string>(days[0]);
-
-  // Genel özet
   const [summary, setSummary] = useState<Summary>({
     total: 0,
     waste: 0,
@@ -30,109 +30,112 @@ const Dashboard: React.FC = () => {
     percent: 0,
   });
   const [loadingSummary, setLoadingSummary] = useState<boolean>(false);
-
-  // Günlük analiz sonuçları
-  type AnalysisResult = {
-    photo_day: string;
-    is_waste: boolean;
-    // Add other fields as needed based on your API response
-  };
-
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
 
-  // GENEL ÖZETİ VE TÜM ANALİZLERİ ÇEK
   const fetchDashboardSummary = async () => {
-    setLoadingSummary(true);
-    // Genel özet
-    const res = await fetch(`${API_URL}/api/dashboard-summary/`);
-    const data = await res.json();
-    setSummary(data);
+    try {
+      setLoadingSummary(true);
 
-    // Günlük analizler
-    const res2 = await fetch(`${API_URL}/api/analysis-results/`);
-    const data2 = await res2.json();
-    setAnalysisResults(data2);
+      const res = await fetch(`${API_URL}/api/dashboard-summary/`);
+      const data = await res.json();
+      setSummary(data);
 
-    setLoadingSummary(false);
+      const res2 = await fetch(`${API_URL}/api/analysis-results/`);
+      const data2 = await res2.json();
+      setAnalysisResults(data2);
+    } catch (err) {
+      console.error("Veri çekme hatası:", err);
+      setError("Veriler alınamadı.");
+    } finally {
+      setLoadingSummary(false);
+    }
   };
+
   useEffect(() => {
     fetchDashboardSummary();
   }, []);
 
-  // FOTOĞRAF SEÇME
+  useEffect(() => {
+    return () => {
+      uploadedImages.forEach((img) =>
+        URL.revokeObjectURL(URL.createObjectURL(img))
+      );
+    };
+  }, [uploadedImages]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     setUploadedImages(Array.from(e.target.files));
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // FOTOĞRAF KALDIRMA
   const removeImage = (idx: number) => {
     setUploadedImages((imgs) => imgs.filter((_, i) => i !== idx));
   };
 
-  // FOTOĞRAF YÜKLEME (gün seçimi ile!)
   const handlePhotoUpload = async (e: React.FormEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setError(null);
+
     if (uploadedImages.length < 1) {
       setError("Lütfen en az bir fotoğraf seçin.");
       return;
     }
+
     setIsUploading(true);
 
-    const formData = new FormData();
-    uploadedImages.forEach((file) => formData.append("photos", file));
-    formData.append("day", selectedDay);
+    try {
+      const formData = new FormData();
+      uploadedImages.forEach((file) => formData.append("photos", file));
+      formData.append("day", selectedDay);
 
-    // 1. Fotoğrafları yükle
-    const res = await fetch(`${API_URL}/api/upload/`, {
-      method: "POST",
-      body: formData,
-    });
-    if (!res.ok) {
-      setIsUploading(false);
-      setError("Yükleme hatası!");
-      return;
-    }
-    const data = await res.json();
-    const uploadedUrls: string[] = data.uploaded_urls || [];
-
-    // 2. Yüklenen her fotoğraf için analiz isteği at
-    for (const url of uploadedUrls) {
-      await fetch(`${API_URL}/api/analysis/`, {
+      const res = await fetch(`${API_URL}/api/upload/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image_url: url,
-          photo_day: selectedDay, // GÜN BİLGİSİ BURADA DA GİDİYOR!
-        }),
+        body: formData,
       });
-    }
 
-    await fetchDashboardSummary(); // özet güncelle
-    setUploadedImages([]);
-    setIsUploading(false);
+      if (!res.ok) throw new Error("Yükleme hatası!");
+
+      const data = await res.json();
+      const uploadedUrls: string[] = data.uploaded_urls || [];
+
+      await Promise.all(
+        uploadedUrls.map((url) =>
+          fetch(`${API_URL}/api/analysis/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              image_url: url,
+              photo_day: selectedDay,
+            }),
+          })
+        )
+      );
+
+      await fetchDashboardSummary();
+      setUploadedImages([]);
+    } catch (err) {
+      console.error(err);
+      setError("Fotoğraflar yüklenirken veya analiz edilirken hata oluştu.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  // --- GÜNLÜK ANALİZ ÖZETİ ---
-  // Seçilen günün analizlerini filtrele
   const dailyResults = analysisResults.filter(
     (r) =>
       (r.photo_day || "").trim().toLowerCase() ===
       selectedDay.trim().toLowerCase()
   );
   const dailyTotal = dailyResults.length;
-  const dailyWaste = dailyResults.filter((r) => r.is_waste === true).length;
-  const dailyNoWaste = dailyResults.filter((r) => r.is_waste === false).length;
+  const dailyWaste = dailyResults.filter((r) => r.is_waste).length;
+  const dailyNoWaste = dailyResults.filter((r) => !r.is_waste).length;
   const dailyPercent =
     dailyTotal > 0 ? Math.round((dailyWaste / dailyTotal) * 100) : 0;
 
   return (
     <div className="max-w-4xl mx-auto py-8">
-      {/* FOTOĞRAF YÜKLEME */}
       <div className="bg-white rounded-xl shadow-lg p-6 border flex flex-col gap-6">
-        {/* GÜN SEÇİMİ */}
         <div className="flex gap-4 items-center">
           <span className="font-semibold text-gray-700">Gün Seç:</span>
           <select
@@ -148,7 +151,6 @@ const Dashboard: React.FC = () => {
           </select>
         </div>
 
-        {/* FOTOĞRAF INPUT ve GÖRÜNTÜLEME */}
         <input
           type="file"
           multiple
@@ -183,6 +185,7 @@ const Dashboard: React.FC = () => {
             <Upload className="w-8 h-8 text-gray-400" />
           </button>
         </div>
+
         <button
           disabled={isUploading || uploadedImages.length === 0}
           onClick={handlePhotoUpload}
@@ -198,9 +201,9 @@ const Dashboard: React.FC = () => {
             "Yükle ve Analiz Et"
           )}
         </button>
+
         {error && <div className="text-red-500 font-medium mt-2">{error}</div>}
 
-        {/* GENEL VE GÜNLÜK ÖZET KUTULARI */}
         <div className="mt-2 flex flex-col md:flex-row gap-4">
           {/* GENEL ÖZET */}
           <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col items-center">
@@ -217,7 +220,6 @@ const Dashboard: React.FC = () => {
                 <span className="text-4xl font-bold text-green-700">
                   {summary.percent}%
                 </span>
-
                 <div className="flex flex-col text-sm gap-1 mt-2">
                   <span>
                     Toplam analiz: <b>{summary.total}</b>
@@ -235,6 +237,7 @@ const Dashboard: React.FC = () => {
               <span className="text-gray-400">Henüz analiz yapılmadı</span>
             )}
           </div>
+
           {/* GÜNLÜK ÖZET */}
           <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col items-center">
             {loadingSummary ? (
@@ -250,7 +253,6 @@ const Dashboard: React.FC = () => {
                 <span className="text-4xl font-bold text-green-700">
                   {dailyPercent}%
                 </span>
-
                 <div className="flex flex-col text-sm gap-1 mt-2">
                   <span>
                     Toplam analiz: <b>{dailyTotal}</b>
