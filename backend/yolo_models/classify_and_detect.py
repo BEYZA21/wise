@@ -30,53 +30,20 @@ except Exception as e:
     print("🚨 GCS bağlantı hatası:", str(e))
     bucket = None
 
-# Model ID listesi
-MODEL_DRIVE_IDS = {
-    "wisePlate.pt": "1Tjp3Ga2b2IIMuiKSjMbWV_8o2PASQzwW",
-    "wiseTypeSoup.pt": "1sbHqVBvtlFhYksyCV6YA7QK_DinlXnQR",
-    "wiseSoup.pt": "1BJjsNDfe5pqn1Btd-CVs03RaU8GGAfqu",
-    "wiseMainTypeCls-yolo5.pt": "181OutK-60HKy0WT-mDOvZOKkjjrM9sjK",
-    "wiseSideTypeCls-yolo5.pt": "1QFNkEMPoCB0ZEF5wq2sp5v1G1fmoNXnZ",
-    "wiseSideCls-yolo5.pt": "1uWRaVV46g-OdTFHLBExboWamBybzD-YL",
-    "wiseExtraTypeCls-yolo5.pt": "1gEuh7AEqqk5gMvEsdftnwhu4tXDfKxSS",
-    "wiseExtraCls-yolo5-yolo5.pt": "1TfzrpbpdM5XM210Jzuk-q96UTgngMrd4",
-    "wiseMainCls-yolo5-yolo5.pt": "1vXG5fjcJhaAwsFMp-xE0udCu_UQZhC4h"
-}
 
-MODEL_BASE_PATH = Path("tmp_models")
 loaded_models = {}
-
-# === Model indirme ===
-def download_from_gdrive(model_filename):
-    if model_filename not in MODEL_DRIVE_IDS:
-        raise ValueError(f"Model ID bulunamadı: {model_filename}")
-
-    dest_path = MODEL_BASE_PATH / model_filename
-    if dest_path.exists():
-        print(f"✅ Model zaten var: {dest_path}")
-        return dest_path
-
-    os.makedirs(MODEL_BASE_PATH, exist_ok=True)
-    file_id = MODEL_DRIVE_IDS[model_filename]
-    url = f"https://drive.google.com/uc?export=download&id={file_id}"
-    print(f"📥 Model indiriliyor: {model_filename}")
-
-    response = requests.get(url)
-    response.raise_for_status()
-    with open(dest_path, "wb") as f:
-        f.write(response.content)
-
-    print(f"✅ Model indirildi: {model_filename}")
-    return dest_path
 
 # === Model yükleme ===
 def load_model(model_filename):
     if model_filename not in loaded_models:
-        model_path = download_from_gdrive(model_filename)
+        model_path = Path("yolov5/weights") / model_filename
+        if not model_path.exists():
+            raise FileNotFoundError(f"Model bulunamadı: {model_path}")
         model = torch.hub.load('ultralytics/yolov5', 'custom', path=str(model_path), force_reload=False)
         model.eval()
         loaded_models[model_filename] = model
     return loaded_models[model_filename]
+
 
 # === Lazy transform ===
 def get_transform():

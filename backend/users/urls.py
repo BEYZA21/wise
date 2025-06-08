@@ -9,7 +9,7 @@ from .views import (
     UploadPhotoView, PhotoListView,
     AnalyzeFoodView,
   ListAnalysisResultsView,
-    DashboardSummaryView
+    DashboardSummaryView,DeleteAnalysisResultsView
 
 
 )
@@ -23,7 +23,7 @@ urlpatterns = [
     path('analysis/', AnalyzeFoodView.as_view(), name='analyze'),
     path('analysis-results/', ListAnalysisResultsView.as_view()),
     path('dashboard-summary/', DashboardSummaryView.as_view(), name='dashboard-summary'),
- 
+    path('delete-analysis-results/', csrf_exempt(DeleteAnalysisResultsView.as_view()), name='delete-analysis-results'),
 ]
 
 

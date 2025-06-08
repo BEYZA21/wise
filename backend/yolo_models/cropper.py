@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image
 from io import BytesIO
 import torch
+from pathlib import Path
 
 from users.models import AnalysisResult
 from google.cloud import storage
@@ -16,7 +17,7 @@ from yolo_models.classify_and_detect import analyze_image_from_url
 # === Ayarlar ===
 BUCKET_NAME = "wise-uploads"
 GCS_PREFIX = "processed"
-MODEL_ID = "1Tjp3Ga2b2IIMuiKSjMbWV_8o2PASQzwW"  # wisePlate.pt
+MODEL_FILENAME = "wisePlate.pt"  # weights klasöründe olmalı
 
 # === GCS Bağlantısı ===
 creds_data = json.loads(base64.b64decode(os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")).decode("utf-8"))
@@ -24,31 +25,27 @@ credentials = service_account.Credentials.from_service_account_info(creds_data)
 gcs_client = storage.Client(credentials=credentials)
 bucket = gcs_client.bucket(BUCKET_NAME)
 
-# === Model Yükleme (Lazy + Cache) ===
+# === Model Yükleme (Lazy + Cache)
 _plate_model = None
+loaded_models = {}
 
-def download_from_gdrive(gdrive_id, dest_path):
-    if not os.path.exists(dest_path):
-        print(f"📥 {dest_path} indiriliyor...")
-        url = f"https://drive.google.com/uc?export=download&id={gdrive_id}"
-        response = requests.get(url)
-        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-        with open(dest_path, "wb") as f:
-            f.write(response.content)
-        print(f"✅ İndirildi: {dest_path}")
-    else:
-        print(f"✅ Zaten var: {dest_path}")
+def load_model(model_filename):
+    if model_filename not in loaded_models:
+        model_path = Path("yolov5/weights") / model_filename
+        if not model_path.exists():
+            raise FileNotFoundError(f"Model bulunamadı: {model_path}")
+        model = torch.hub.load('ultralytics/yolov5', 'custom', path=str(model_path), force_reload=False)
+        model.eval()
+        loaded_models[model_filename] = model
+    return loaded_models[model_filename]
 
 def get_plate_model():
     global _plate_model
     if _plate_model is None:
-        model_path = "tmp_models/wisePlate.pt"
-        download_from_gdrive(MODEL_ID, model_path)
-        _plate_model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path)
+        _plate_model = load_model(MODEL_FILENAME)
     return _plate_model
 
 def get_transform():
-    # Lazy import: RAM dostu
     import torchvision.transforms as transforms
     return transforms.Compose([
         transforms.Resize((224, 224)),

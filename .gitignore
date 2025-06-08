@@ -6,10 +6,9 @@ backend/wise-453820-*.json
 venv/
 __pycache__/
 *.pyc
-
+node_modules/
 # Büyük dosya türleri ve modeller
 *.pkl
-*.pt
 *.h5
 *.jpg
 *.png
