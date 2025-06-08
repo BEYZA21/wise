@@ -9,12 +9,13 @@ from .views import (
     UploadPhotoView, PhotoListView,
     AnalyzeFoodView,
   ListAnalysisResultsView,
-    DashboardSummaryView,
+    DashboardSummaryView,HealthCheckView
 
 
 )
 
 urlpatterns = [
+    path("health/", HealthCheckView.as_view()),
     path('login/', csrf_exempt(LoginView.as_view()), name='login'),
     path('register/', csrf_exempt(RegisterView.as_view()), name='register'),
     path('upload/', csrf_exempt (UploadPhotoView.as_view()), name='upload'),
