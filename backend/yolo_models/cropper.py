@@ -34,7 +34,8 @@ def load_model(model_filename):
         model_path = Path("yolov5/weights") / model_filename
         if not model_path.exists():
             raise FileNotFoundError(f"Model bulunamadı: {model_path}")
-        model = torch.hub.load('ultralytics/yolov5', 'custom', path=str(model_path), force_reload=False)
+        model = torch.hub.load('ultralytics/yolov5', 'custom', path=str(model_path), force_reload=True, trust_repo=True)
+
         model.eval()
         loaded_models[model_filename] = model
     return loaded_models[model_filename]

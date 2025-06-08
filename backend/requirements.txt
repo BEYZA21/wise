@@ -10,8 +10,7 @@ python-dotenv
 ultralytics==8.3.59
 gitpython>=3.1.30
 setuptools>=70.0.0
-matplotlib
-seaborn
+
 tqdm
 thop
 
