@@ -1,7 +1,7 @@
 # Temel
 torch==2.1.0
 torchvision==0.16.0
-numpy
+numpy==1.26.4
 pillow
 requests
 
@@ -26,3 +26,4 @@ django-cors-headers
 # Ekstra (işine yarayanlar)
 python-dotenv
 opencv-python-headless
+gunicorn
