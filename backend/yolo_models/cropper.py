@@ -34,12 +34,8 @@ def load_model(model_filename):
         model_path = Path("yolov5/weights") / model_filename
         if not model_path.exists():
             raise FileNotFoundError(f"Model bulunamadı: {model_path}")
-        from yolov5.models.common import DetectMultiBackend
-        
-        model = DetectMultiBackend(weights=str(model_path), device='cpu')
+        model = torch.hub.load('ultralytics/yolov5', 'custom', path=str(model_path), force_reload=False)
         model.eval()
-
-
         loaded_models[model_filename] = model
     return loaded_models[model_filename]
 

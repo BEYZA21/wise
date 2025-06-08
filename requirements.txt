@@ -1,0 +1,27 @@
+# Temel
+torch==2.1.0
+torchvision==0.16.0
+numpy
+pillow
+requests
+
+# Yolov5 için gerekli
+ultralytics==8.0.20
+matplotlib
+seaborn
+
+# Google Cloud için
+google-cloud-storage
+google-auth
+google-auth-oauthlib
+google-api-core
+googleapis-common-protos
+
+# Django ve REST
+Django>=4.2
+djangorestframework
+django-cors-headers
+
+# Ekstra (işine yarayanlar)
+python-dotenv
+opencv-python-headless
