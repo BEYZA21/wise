@@ -63,18 +63,22 @@ MIDDLEWARE = [
 # CORS ayarları (React ile sorunsuz)
 # CORS
 
+from corsheaders.defaults import default_headers
+
 CORS_ALLOWED_ORIGINS = [
-    "https://wise-nine.vercel.app",  # Vercel URL'in tam hali
+    "https://wise-nine.vercel.app",  # Frontend URL
 ]
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = [
-    "accept", "accept-encoding", "authorization", "content-type", "dnt",
-    "origin", "user-agent", "x-csrftoken", "x-requested-with",
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "content-disposition",
 ]
+
 CORS_ALLOW_METHODS = [
     "DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT",
 ]
+
 
 # Django REST Framework ayarları
 REST_FRAMEWORK = {
