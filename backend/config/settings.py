@@ -62,8 +62,9 @@ MIDDLEWARE = [
 
 # CORS ayarları (React ile sorunsuz)
 # CORS
-
-CORS_ALLOWED_ORIGINS =["http://localhost:5173",
+CORS_ALLOWED_ORIGINS = [
+    "https://wise-nine.vercel.app",
+    "http://localhost:3000",  # local frontend testleri için
 ]
 
 
