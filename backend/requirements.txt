@@ -6,7 +6,8 @@ pillow
 requests
 
 # Yolov5 için gerekli
-ultralytics==8.0.20
+ultralytics==8.3.59
+
 matplotlib
 seaborn
 
