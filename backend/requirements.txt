@@ -36,3 +36,4 @@ psutil
 pandas==2.3.0
 scipy
 py-cpuinfo
+gunicorn
