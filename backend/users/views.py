@@ -86,7 +86,6 @@ gun = DAYS_TR[datetime.datetime.now().weekday()]
 
 # ========== FOTOĞRAF YÜKLEME ==========
 
-@parser_classes([JSONParser])
 class UploadPhotoView(APIView):
     parser_classes = [MultiPartParser, FormParser]
     permission_classes = [AllowAny]
