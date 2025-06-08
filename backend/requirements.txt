@@ -1,29 +1,38 @@
 # Temel
 torch==2.1.0
 torchvision==0.16.0
-numpy==1.26.4
+numpy<2.0.0
 pillow
 requests
+python-dotenv
 
-# Yolov5 için gerekli
+# YOLOv5 için gerekli
 ultralytics==8.3.59
-
+gitpython>=3.1.30
+setuptools>=70.0.0
 matplotlib
 seaborn
+tqdm
+thop
 
-# Google Cloud için
-google-cloud-storage
+# Django ve REST
+Django==5.2.2
+djangorestframework==3.16.0
+django-cors-headers
+
+# Google Cloud Storage
+google-cloud-storage==3.1.0
 google-auth
 google-auth-oauthlib
 google-api-core
 googleapis-common-protos
+google-crc32c
+google-resumable-media
 
-# Django ve REST
-Django>=4.2
-djangorestframework
-django-cors-headers
-
-# Ekstra (işine yarayanlar)
-python-dotenv
-opencv-python-headless
-gunicorn
+# Diğer
+opencv-python==4.11.0.86
+opencv-python-headless==4.11.0.86
+psutil
+pandas==2.3.0
+scipy
+py-cpuinfo

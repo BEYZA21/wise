@@ -95,9 +95,9 @@ TYPE_MODELS = {
 }
 
 WASTE_MODELS = {
-    "ana-yemek": "wiseMainCls-yolo5-yolo5.pt",
+    "ana-yemek": "wiseMainCls-yolo5.pt",
     "corba": "wiseSoup.pt",
-    "ek-yemek": "wiseExtraCls-yolo5-yolo5.pt",
+    "ek-yemek": "wiseExtraCls-yolo5.pt",
     "yan-yemek": "wiseSideCls-yolo5.pt"
 }
 

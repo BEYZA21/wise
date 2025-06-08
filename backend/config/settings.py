@@ -63,9 +63,9 @@ MIDDLEWARE = [
 # CORS ayarları (React ile sorunsuz)
 # CORS
 
-CORS_ALLOWED_ORIGINS = [
-    "https://wise-nine.vercel.app",  # Vercel URL'in tam hali
+CORS_ALLOWED_ORIGINS =["http://localhost:5173",
 ]
+
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [

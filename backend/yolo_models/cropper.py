@@ -116,7 +116,9 @@ def crop_and_save(image, original_filename="", photo_day=None):
                     "food_category": category,
                     "food_type": food_type,
                     "is_waste": israf == "israf-var",
-                    "photo_day": photo_day
+                    "photo_day": photo_day,
+                    "tur_confidence": result.get("tur_confidence"),
+                    "israf_confidence": result.get("israf_confidence")
                 })
 
                 uploaded_results.append(result)

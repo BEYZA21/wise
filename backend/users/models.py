@@ -2,7 +2,7 @@ from django.db import models
 
 # TEKİL ANALİZ KAYDI (her fotoğraf analizi için bir satır)
 class AnalysisResult(models.Model):
-    image_url = models.URLField
+    image_url = models.URLField(max_length=500, null=True, blank=True)
     food_category = models.CharField(max_length=50)   # ör: 'corba', 'ana-yemek', vs.
     food_type = models.CharField(max_length=100)      # ör: 'mercimek-corbasi', 'et-sote', vs.
     is_waste = models.BooleanField()
