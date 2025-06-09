@@ -107,10 +107,10 @@ class AnalyzeFoodView(APIView):
 
     def post(self, request):
         image_url = request.data.get("image_url")
-        photo_day = request.data.get("photo_day")
+        analysis_date = request.data.get("analysis_date")
 
-        if not image_url or not photo_day:
-            return Response({"error": "image_url ve photo_day alanları zorunludur."}, status=400)
+        if not image_url or not analysis_date:
+            return Response({"error": "image_url ve analysis_date alanları zorunludur."}, status=400)
 
         try:
             print("🔗 Görsel indiriliyor:", image_url)
@@ -120,7 +120,7 @@ class AnalyzeFoodView(APIView):
 
             original_filename = image_url.split("/")[-1]
             print("✂️ Görsel kırpılıyor ve analiz ediliyor...")
-            results = crop_and_save(img0, original_filename=original_filename, photo_day=photo_day)
+            results = crop_and_save(img0, original_filename=original_filename, analysis_date=analysis_date)
 
             if not results:
                 return Response({"error": "Hiçbir yemek tespit edilemedi."}, status=200)
@@ -134,7 +134,7 @@ class AnalyzeFoodView(APIView):
                             "food_category": result.get("food_category", ""),
                             "food_type": result.get("food_type", ""),
                             "is_waste": result.get("is_waste", False),
-                            "photo_day": photo_day
+                            "analysis_date": analysis_date
                         }
                     )
                     analysis_results.append(result)
@@ -158,9 +158,9 @@ class ListAnalysisResultsView(ListAPIView):
 
     def get_queryset(self):
         queryset = AnalysisResult.objects.all().order_by('-created_at')
-        photo_day = self.request.query_params.get('photo_day')
-        if photo_day:
-            queryset = queryset.filter(photo_day=photo_day)
+        analysis_date = self.request.query_params.get('analysis_date')
+        if analysis_date:
+            queryset = queryset.filter(analysis_date=analysis_date)
         return queryset
 
 @parser_classes([JSONParser])

@@ -7,7 +7,7 @@ class AnalysisResult(models.Model):
     food_type = models.CharField(max_length=100)      # ör: 'mercimek-corbasi', 'et-sote', vs.
     is_waste = models.BooleanField()
     created_at = models.DateTimeField(auto_now_add=True)
-    photo_day = models.CharField(max_length=20, null=True, blank=True)
+    analysis_date = models.CharField(max_length=20)
 
     def __str__(self):
         return f"{self.food_category} | {self.food_type} - {'israf-var' if self.is_waste else 'israf-yok'}"

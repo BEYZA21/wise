@@ -5,7 +5,7 @@ from google.oauth2 import service_account
 import os
 from dotenv import load_dotenv
 
-load_dotenv()  # .env dosyasını yükler
+load_dotenv()
 
 # Temel dizin
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -60,11 +60,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# CORS ayarları (React ile sorunsuz)
-# CORS
+
 CORS_ALLOWED_ORIGINS = [
-    "https://wise-nine.vercel.app",
-    "http://localhost:3000",  # local frontend testleri için
+    "http://localhost:5173",  
+    "http://127.0.0.1:5173", 
+    "https://wise-byn.onrender.com"
 ]
 
 
@@ -77,7 +77,7 @@ CORS_ALLOW_METHODS = [
     "DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT",
 ]
 
-# Django REST Framework ayarları
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',

@@ -55,7 +55,7 @@ def get_transform():
     ])
 
 # === Ana Fonksiyon ===
-def crop_and_save(image, original_filename="", photo_day=None):
+def crop_and_save(image, original_filename="", analysis_date=None):
     uploaded_results = []
 
     try:
@@ -95,7 +95,7 @@ def crop_and_save(image, original_filename="", photo_day=None):
                 # Alt sınıflandırma
                 result = analyze_image_from_url(tensor=tensor, category=category)
                 if result.get("error"):
-                    result["photo_day"] = photo_day
+                    result["analysis_date"] = analysis_date
                     uploaded_results.append(result)
                     continue
 
@@ -117,7 +117,7 @@ def crop_and_save(image, original_filename="", photo_day=None):
                     "food_category": category,
                     "food_type": food_type,
                     "is_waste": israf == "israf-var",
-                    "photo_day": photo_day,
+                    "analysis_date": analysis_date,
                     "tur_confidence": result.get("tur_confidence"),
                     "israf_confidence": result.get("israf_confidence")
                 })
@@ -127,11 +127,11 @@ def crop_and_save(image, original_filename="", photo_day=None):
             except Exception as e:
                 import traceback
                 traceback.print_exc()
-                uploaded_results.append({"error": str(e), "photo_day": photo_day})
+                uploaded_results.append({"error": str(e), "analysis_date": analysis_date})
 
     except Exception as e:
         import traceback
         traceback.print_exc()
-        uploaded_results.append({"error": str(e), "photo_day": photo_day})
+        uploaded_results.append({"error": str(e), "analysis_date":analysis_date})
 
     return uploaded_results
