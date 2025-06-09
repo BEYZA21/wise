@@ -10,9 +10,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { format, addMonths, subMonths } from "date-fns";
+import { format, addMonths, subMonths, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
-
 const weekDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 const foodCategories = [
   { key: "corba", title: "Çorba Türleri" },
@@ -74,12 +73,17 @@ const Statistics = () => {
     fetchData();
   }, []);
 
-  // Haftalık dağılım: analysis_date ile!
   const getWeeklyStats = () => {
     return weekDays.map((gun) => {
-      const dayResults = analysisResults.filter(
-        (r) => (r.analysis_date || "").toLowerCase() === gun.toLowerCase()
-      );
+      const dayResults = analysisResults.filter((r) => {
+        const dateStr = r.analysis_date;
+        if (!dateStr) return false;
+
+        // Gün adını al
+        const dayName = format(parseISO(dateStr), "EEEE", { locale: tr });
+        return dayName.toLowerCase() === gun.toLowerCase();
+      });
+
       const waste = dayResults.filter((r) => r.is_waste).length;
       const noWaste = dayResults.filter((r) => !r.is_waste).length;
       return {

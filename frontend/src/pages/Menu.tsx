@@ -121,7 +121,7 @@ const Menu: React.FC = () => {
               onClick={handleGenerateMenu}
               className="px-6 py-2 bg-[#7BC47F] text-white rounded-lg hover:bg-[#6AB36E] transition-colors"
             >
-              Günlük En Az İsraf Edilen Menü Oluştur
+              Günlük Menü Oluştur
             </button>
           </div>
           {error && (
