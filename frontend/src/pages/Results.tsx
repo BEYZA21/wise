@@ -20,7 +20,6 @@ const categoryMapping = {
 const weekDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 
 const Results = () => {
-  // Removed unused viewMode state
   const [currentDate, setCurrentDate] = useState(new Date());
   type AnalysisResult = {
     created_at: string;
@@ -28,7 +27,7 @@ const Results = () => {
     food_type: string;
     is_waste: boolean;
     image_url: string;
-    analysis_date?: Date;
+    analysis_date?: string;
   };
 
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
@@ -49,22 +48,14 @@ const Results = () => {
     fetchData();
   }, []);
 
-  // Haftanın başını bul (her zaman Pazartesi)
   const startDate = startOfWeek(currentDate, { weekStartsOn: 1 });
-
-  // Sabit gün ismi + tarih eşlemesiyle gün listesi oluştur
   const days = weekDays.map((gun, i) => ({
     label: gun,
     date: addDays(startDate, i),
   }));
 
-  const handlePrevious = () => {
-    setCurrentDate((prev) => addDays(prev, -7));
-  };
-
-  const handleNext = () => {
-    setCurrentDate((prev) => addDays(prev, 7));
-  };
+  const handlePrevious = () => setCurrentDate((prev) => addDays(prev, -7));
+  const handleNext = () => setCurrentDate((prev) => addDays(prev, 7));
 
   const getSummaryForCategory = (category: string) => {
     const mappedCat = categoryMapping[category];
@@ -72,14 +63,13 @@ const Results = () => {
       (item) => (item.food_category || "").toLocaleLowerCase("tr") === mappedCat
     );
     const total = catResults.length;
-    const wasteCount = catResults.filter(
-      (item) => item.is_waste === true
-    ).length;
-    const avgWastePercent = "0";
-    return { total, wasteCount, avgWastePercent };
+    const wasteCount = catResults.filter((item) => item.is_waste).length;
+    return { total, wasteCount };
   };
 
   const renderDateCell = (gun: string, date: Date) => {
+    const formattedDate = format(date, "yyyy-MM-dd");
+
     return (
       <>
         <td className="px-6 py-4">
@@ -92,21 +82,20 @@ const Results = () => {
         </td>
         {categories.map((category, idx) => {
           const cat = categoryMapping[category];
-          const dayData = analysisResults.filter((item) => {
-            const analysisDateStr =
-              item.analysis_date instanceof Date
-                ? item.analysis_date.toISOString().split("T")[0]
-                : String(item.analysis_date);
-
-            const selectedDayStr = format(date, "yyyy-MM-dd");
-
-            return (
-              analysisDateStr === selectedDayStr &&
+          const dayData = analysisResults.filter(
+            (item) =>
+              item.analysis_date === formattedDate &&
               (item.food_category || "").toLocaleLowerCase("tr") === cat
-            );
-          });
+          );
 
-          // Grupla: aynı yemek türlerini birleştir
+          if (dayData.length === 0) {
+            return (
+              <td key={idx} className="px-6 py-4 text-gray-400 italic">
+                Veri yok
+              </td>
+            );
+          }
+
           const grouped = new Map<string, { waste: number; total: number }>();
 
           dayData.forEach((item) => {
@@ -150,7 +139,6 @@ const Results = () => {
     );
   };
 
-  // --- KATEGORİ ÖZETİ ---
   const getExtremeWastePerCategory = (
     category: string,
     type: "min" | "max"
@@ -160,14 +148,9 @@ const Results = () => {
       (item) => (item.food_category || "").toLocaleLowerCase("tr") === mappedCat
     );
     if (catResults.length === 0) return null;
-
-    if (type === "min") {
-      return (
-        catResults.find((item) => item.is_waste === false) || catResults[0]
-      );
-    } else {
-      return catResults.find((item) => item.is_waste === true) || catResults[0];
-    }
+    return type === "min"
+      ? catResults.find((item) => item.is_waste === false) || catResults[0]
+      : catResults.find((item) => item.is_waste === true) || catResults[0];
   };
 
   return (
@@ -185,7 +168,6 @@ const Results = () => {
             <span className="text-gray-700">: %60'tan düşük israf oranı</span>
           </span>
         </div>
-
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <button
