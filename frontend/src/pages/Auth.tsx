@@ -17,7 +17,6 @@ interface AuthProps {
 }
 
 const Auth: React.FC<AuthProps> = ({ mode, onClose, onLogin, onRegister }) => {
-  // Login için ayrı, register için ayrı state'ler
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [regUsername, setRegUsername] = useState("");
@@ -47,24 +46,29 @@ const Auth: React.FC<AuthProps> = ({ mode, onClose, onLogin, onRegister }) => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 z-50">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Logo ve başlık kısmı */}
-        <div className="flex flex-col items-center">
-          <Leaf className="w-12 h-12 text-[#7BC47F]" />
-          <h2 className="mt-4 text-center text-3xl font-extrabold text-gray-900">
-            WISE
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sürdürülebilir Beslenme Sistemi
-          </p>
+        <div className="flex justify-center items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Leaf className="w-10 h-10 text-[#7BC47F]" />
+            <span
+              className="text-4xl font-extrabold text-black"
+              style={{ letterSpacing: "0.1em" }}
+            >
+              WISE
+            </span>
+          </div>
         </div>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Sürdürülebilir Beslenme Sistemi
+        </p>
+      </div>
 
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <form
           onSubmit={handleSubmit}
-          className="relative bg-white rounded-lg shadow-md p-8 mt-6"
+          className="relative bg-white rounded-lg shadow-md p-8"
         >
-          {/* Çarpı butonu */}
           <button
             type="button"
             onClick={onClose}
@@ -77,6 +81,7 @@ const Auth: React.FC<AuthProps> = ({ mode, onClose, onLogin, onRegister }) => {
           <h2 className="mb-6 text-2xl font-bold text-center">
             {mode === "login" ? "Giriş Yap" : "Kayıt Ol"}
           </h2>
+
           <div className="space-y-4">
             {mode === "register" ? (
               <>
@@ -130,11 +135,13 @@ const Auth: React.FC<AuthProps> = ({ mode, onClose, onLogin, onRegister }) => {
                 />
               </>
             )}
+
             {error && (
               <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
                 {error}
               </div>
             )}
+
             <button
               type="submit"
               disabled={loading}

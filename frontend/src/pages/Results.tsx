@@ -28,7 +28,7 @@ const Results = () => {
     food_type: string;
     is_waste: boolean;
     image_url: string;
-    photo_day?: string;
+    analysis_date?: Date;
   };
 
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
@@ -66,17 +66,6 @@ const Results = () => {
     setCurrentDate((prev) => addDays(prev, 7));
   };
 
-  const getResultsForDayAndCategory = (dayLabel: string, category: string) => {
-    const mappedCat = categoryMapping[category];
-    // photo_day alanı ile kıyasla (büyük/küçük harfe duyarsız)
-    return analysisResults.filter(
-      (item) =>
-        (item.photo_day || "").toLocaleLowerCase("tr").trim() ===
-          dayLabel.toLocaleLowerCase("tr").trim() &&
-        (item.food_category || "").toLocaleLowerCase("tr") === mappedCat
-    );
-  };
-
   const getSummaryForCategory = (category: string) => {
     const mappedCat = categoryMapping[category];
     const catResults = analysisResults.filter(
@@ -90,7 +79,6 @@ const Results = () => {
     return { total, wasteCount, avgWastePercent };
   };
 
-  // --- TABLOYA BASMA ---
   const renderDateCell = (gun: string, date: Date) => {
     return (
       <>
@@ -103,25 +91,56 @@ const Results = () => {
           </div>
         </td>
         {categories.map((category, idx) => {
-          const dayData = getResultsForDayAndCategory(gun, category);
+          const cat = categoryMapping[category];
+          const dayData = analysisResults.filter((item) => {
+            const analysisDateStr =
+              item.analysis_date instanceof Date
+                ? item.analysis_date.toISOString().split("T")[0]
+                : String(item.analysis_date);
+
+            const selectedDayStr = format(date, "yyyy-MM-dd");
+
+            return (
+              analysisDateStr === selectedDayStr &&
+              (item.food_category || "").toLocaleLowerCase("tr") === cat
+            );
+          });
+
+          // Grupla: aynı yemek türlerini birleştir
+          const grouped = new Map<string, { waste: number; total: number }>();
+
+          dayData.forEach((item) => {
+            const key = item.food_type;
+            if (!grouped.has(key)) {
+              grouped.set(key, { waste: 0, total: 0 });
+            }
+            const current = grouped.get(key)!;
+            current.total += 1;
+            if (item.is_waste) current.waste += 1;
+          });
+
           return (
             <td key={idx} className="px-6 py-4">
               <div className="space-y-2">
-                {dayData.length === 0 ? (
-                  <span className="text-xs text-gray-400">Veri yok</span>
-                ) : (
-                  dayData.map((item, itemIndex) => (
-                    <div key={itemIndex} className="flex items-center gap-2">
-                      {item.is_waste ? (
-                        <AlertCircle className="w-4 h-4 text-red-500" />
-                      ) : (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      )}
-                      <span className="text-xs text-gray-500">
-                        {item.food_type || "-"}
-                      </span>
-                    </div>
-                  ))
+                {[...grouped.entries()].map(
+                  ([foodType, { waste, total }], i) => {
+                    const ratio = total > 0 ? (waste / total) * 100 : 0;
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        {ratio > 60 ? (
+                          <AlertCircle className="w-4 h-4 text-red-500" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        )}
+                        <span className="text-sm text-gray-600 font-medium">
+                          %{Math.round(ratio)}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {foodType}
+                        </span>
+                      </div>
+                    );
+                  }
                 )}
               </div>
             </td>
@@ -155,6 +174,18 @@ const Results = () => {
     <div className="max-w-7xl mx-auto">
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-800">Sonuçlar</h1>
+        <div className="flex items-center gap-3 bg-gray-100 px-3 py-1 rounded-lg text-sm">
+          <span className="flex items-center gap-1">
+            <AlertCircle className="w-4 h-4 text-red-500" />
+            <span className="text-gray-700">: %60'tan yüksek israf oranı</span>
+          </span>
+          <span className="mx-2">|</span>
+          <span className="flex items-center gap-1">
+            <CheckCircle className="w-4 h-4 text-green-500" />
+            <span className="text-gray-700">: %60'tan düşük israf oranı</span>
+          </span>
+        </div>
+
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <button

@@ -1,67 +1,55 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Upload, X, Loader2 } from "lucide-react";
+import DatePicker, { registerLocale } from "react-datepicker";
+import { tr } from "date-fns/locale";
+import { format } from "date-fns";
+import "react-datepicker/dist/react-datepicker.css";
 import { API_URL } from "../config";
 
-const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
-
-type Summary = {
-  total: number;
-  waste: number;
-  noWaste: number;
-  percent: number;
-};
+registerLocale("tr", tr);
 
 type AnalysisResult = {
-  photo_day: string;
+  analysis_date: string;
+  food_category: string;
+  food_type: string;
   is_waste: boolean;
 };
 
-const Dashboard: React.FC = () => {
+const categories = ["Çorba", "Ana Yemek", "Yan Yemek", "Ek Yemek"];
+const categoryMapping = {
+  Çorba: "corba",
+  "Ana Yemek": "ana-yemek",
+  "Yan Yemek": "yan-yemek",
+  "Ek Yemek": "ek-yemek",
+} as Record<string, string>;
+
+const Dashboard = () => {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const [selectedDay, setSelectedDay] = useState<string>(days[0]);
-  const [summary, setSummary] = useState<Summary>({
-    total: 0,
-    waste: 0,
-    noWaste: 0,
-    percent: 0,
-  });
-  const [loadingSummary, setLoadingSummary] = useState<boolean>(false);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<
+    "idle" | "uploading" | "uploaded" | "analyzing"
+  >("idle");
 
-  const fetchDashboardSummary = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      setLoadingSummary(true);
-
-      const res = await fetch(`${API_URL}/api/dashboard-summary/`);
+      const res = await fetch(`${API_URL}/api/analysis-results/`);
       const data = await res.json();
-      setSummary(data);
-
-      const res2 = await fetch(`${API_URL}/api/analysis-results/`);
-      const data2 = await res2.json();
-      setAnalysisResults(data2);
-    } catch (err) {
-      console.error("Veri çekme hatası:", err);
-      setError("Veriler alınamadı.");
-    } finally {
-      setLoadingSummary(false);
+      setAnalysisResults(data);
+    } catch {
+      setAnalysisResults([]);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
-    fetchDashboardSummary();
+    fetchData();
   }, []);
-
-  useEffect(() => {
-    return () => {
-      uploadedImages.forEach((img) =>
-        URL.revokeObjectURL(URL.createObjectURL(img))
-      );
-    };
-  }, [uploadedImages]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -83,11 +71,13 @@ const Dashboard: React.FC = () => {
     }
 
     setIsUploading(true);
+    setUploadStatus("uploading");
 
     try {
       const formData = new FormData();
       uploadedImages.forEach((file) => formData.append("photos", file));
-      formData.append("day", selectedDay);
+      const formattedDate = format(selectedDate, "yyyy-MM-dd");
+      formData.append("date", formattedDate);
 
       const res = await fetch(`${API_URL}/api/upload/`, {
         method: "POST",
@@ -96,8 +86,12 @@ const Dashboard: React.FC = () => {
 
       if (!res.ok) throw new Error("Yükleme hatası!");
 
+      setUploadStatus("uploaded");
+
       const data = await res.json();
       const uploadedUrls: string[] = data.uploaded_urls || [];
+
+      setUploadStatus("analyzing");
 
       await Promise.all(
         uploadedUrls.map((url) =>
@@ -106,49 +100,49 @@ const Dashboard: React.FC = () => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               image_url: url,
-              photo_day: selectedDay,
+              analysis_date: formattedDate,
             }),
           })
         )
       );
 
-      await fetchDashboardSummary();
+      setUploadStatus("idle");
+      await fetchData();
       setUploadedImages([]);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
       setError("Fotoğraflar yüklenirken veya analiz edilirken hata oluştu.");
+      setUploadStatus("idle");
     } finally {
       setIsUploading(false);
     }
   };
 
-  const dailyResults = analysisResults.filter(
-    (r) =>
-      (r.photo_day || "").trim().toLowerCase() ===
-      selectedDay.trim().toLowerCase()
+  const filteredResults = analysisResults.filter(
+    (r) => r.analysis_date === format(selectedDate, "yyyy-MM-dd")
   );
-  const dailyTotal = dailyResults.length;
-  const dailyWaste = dailyResults.filter((r) => r.is_waste).length;
-  const dailyNoWaste = dailyResults.filter((r) => !r.is_waste).length;
-  const dailyPercent =
-    dailyTotal > 0 ? Math.round((dailyWaste / dailyTotal) * 100) : 0;
+
+  const getResultsByCategory = (category: string) => {
+    const mapped = categoryMapping[category];
+    return filteredResults.filter(
+      (r) => (r.food_category || "").toLocaleLowerCase("tr") === mapped
+    );
+  };
 
   return (
     <div className="max-w-4xl mx-auto py-8">
       <div className="bg-white rounded-xl shadow-lg p-6 border flex flex-col gap-6">
-        <div className="flex gap-4 items-center">
-          <span className="font-semibold text-gray-700">Gün Seç:</span>
-          <select
-            className="border rounded px-2 py-1"
-            value={selectedDay}
-            onChange={(e) => setSelectedDay(e.target.value)}
-          >
-            {days.map((day) => (
-              <option key={day} value={day}>
-                {day}
-              </option>
-            ))}
-          </select>
+        <div className="mb-4">
+          <label className="font-semibold text-gray-700 mb-2 block">
+            Tarih Seç:
+          </label>
+          <DatePicker
+            selected={selectedDate}
+            onChange={(date) => setSelectedDate(date as Date)}
+            locale="tr"
+            dateFormat="dd MMMM yyyy"
+            className="border rounded px-3 py-2 w-full"
+          />
         </div>
 
         <input
@@ -160,6 +154,7 @@ const Dashboard: React.FC = () => {
           className="hidden"
           id="photoInput"
         />
+
         <div className="flex flex-wrap gap-2 mb-2">
           {uploadedImages.map((img, idx) => (
             <div key={idx} className="relative group">
@@ -203,75 +198,57 @@ const Dashboard: React.FC = () => {
         </button>
 
         {error && <div className="text-red-500 font-medium mt-2">{error}</div>}
-
-        <div className="mt-2 flex flex-col md:flex-row gap-4">
-          {/* GENEL ÖZET */}
-          <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col items-center">
-            {loadingSummary ? (
-              <span className="text-gray-400 flex gap-2 items-center">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Yükleniyor...
-              </span>
-            ) : summary.total > 0 ? (
-              <>
-                <span className="font-semibold text-lg text-blue-800">
-                  Genel İsraf Oranı
-                </span>
-                <span className="text-4xl font-bold text-green-700">
-                  {summary.percent}%
-                </span>
-                <div className="flex flex-col text-sm gap-1 mt-2">
-                  <span>
-                    Toplam analiz: <b>{summary.total}</b>
-                  </span>
-                  <span>
-                    İsraf var: <b className="text-red-600">{summary.waste}</b>
-                  </span>
-                  <span>
-                    İsraf yok:{" "}
-                    <b className="text-green-600">{summary.noWaste}</b>
-                  </span>
-                </div>
-              </>
-            ) : (
-              <span className="text-gray-400">Henüz analiz yapılmadı</span>
-            )}
+        {uploadStatus === "uploaded" && (
+          <div className="text-green-600 mt-2 font-medium">
+            📸 Fotoğraflar yüklendi.
           </div>
+        )}
 
-          {/* GÜNLÜK ÖZET */}
-          <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col items-center">
-            {loadingSummary ? (
-              <span className="text-gray-400 flex gap-2 items-center">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Yükleniyor...
-              </span>
-            ) : dailyTotal > 0 ? (
-              <>
-                <span className="font-semibold text-lg text-blue-800">
-                  {selectedDay} Analiz Özeti
-                </span>
-                <span className="text-4xl font-bold text-green-700">
-                  {dailyPercent}%
-                </span>
-                <div className="flex flex-col text-sm gap-1 mt-2">
-                  <span>
-                    Toplam analiz: <b>{dailyTotal}</b>
-                  </span>
-                  <span>
-                    İsraf var: <b className="text-red-600">{dailyWaste}</b>
-                  </span>
-                  <span>
-                    İsraf yok: <b className="text-green-600">{dailyNoWaste}</b>
-                  </span>
-                </div>
-              </>
-            ) : (
-              <span className="text-gray-400">
-                {selectedDay} için henüz analiz yapılmadı
-              </span>
-            )}
+        {uploadStatus === "analyzing" && (
+          <div className="flex items-center gap-2 text-blue-600 mt-2 font-medium">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Analiz ediliyor…
           </div>
+        )}
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {categories.map((category) => {
+            const data = getResultsByCategory(category);
+            const waste = data.filter((d) => d.is_waste).length;
+            const noWaste = data.length - waste;
+            const percent =
+              data.length > 0 ? Math.round((waste / data.length) * 100) : 0;
+
+            return (
+              <div
+                key={category}
+                className="bg-gray-50 border p-4 rounded-lg shadow"
+              >
+                <h4 className="text-lg font-semibold text-gray-700 mb-2">
+                  {category}
+                </h4>
+                <p className="text-sm">
+                  Toplam: <b>{data.length}</b>
+                </p>
+                <p className="text-sm text-red-600">
+                  İsraf Var: <b>{waste}</b>
+                </p>
+                <p className="text-sm text-green-600">
+                  İsraf Yok: <b>{noWaste}</b>
+                </p>
+                <div className="mt-2 text-sm text-gray-700">
+                  İsraf Oranı: <b>{percent}%</b>
+                </div>
+              </div>
+            );
+          })}
         </div>
+
+        {loading && (
+          <div className="text-center py-8 text-gray-600 text-lg">
+            Yükleniyor...
+          </div>
+        )}
       </div>
     </div>
   );

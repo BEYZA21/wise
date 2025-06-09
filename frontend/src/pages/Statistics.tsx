@@ -54,7 +54,7 @@ interface AnalysisResult {
   is_waste: boolean;
   food_category: string;
   food_type: string;
-  photo_day?: string;
+  analysis_date?: string;
 }
 
 const Statistics = () => {
@@ -74,11 +74,11 @@ const Statistics = () => {
     fetchData();
   }, []);
 
-  // Haftalık dağılım: photo_day ile!
+  // Haftalık dağılım: analysis_date ile!
   const getWeeklyStats = () => {
     return weekDays.map((gun) => {
       const dayResults = analysisResults.filter(
-        (r) => (r.photo_day || "").toLowerCase() === gun.toLowerCase()
+        (r) => (r.analysis_date || "").toLowerCase() === gun.toLowerCase()
       );
       const waste = dayResults.filter((r) => r.is_waste).length;
       const noWaste = dayResults.filter((r) => !r.is_waste).length;
@@ -90,7 +90,7 @@ const Statistics = () => {
     });
   };
 
-  // Aylık toplam (photo_day'e bakmadan ayda kaç israf, kaç normal)
+  // Aylık toplam (analysis_date'e bakmadan ayda kaç israf, kaç normal)
   const getMonthlyStats = () => {
     const month = currentDate.getMonth();
     const year = currentDate.getFullYear();
