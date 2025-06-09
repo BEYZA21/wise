@@ -5,7 +5,7 @@ from google.oauth2 import service_account
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv()  # .env dosyasını yükler
 
 # Temel dizin
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -64,7 +64,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  
     "http://127.0.0.1:5173", 
-    "https://wise-byn-9s3y.onrender.com"
+    "https://wise-nine.vercel.app"
 ]
 
 
